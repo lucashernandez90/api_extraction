@@ -78,9 +78,11 @@ def get_feiras_bairro(bairro):
 #------------------------PUT---------------------------------#
 
 @app.route('/feiras/<int:id>', methods=['PUT'])     
-def edit_feira_idz(id):
+def edit_feira_id(id):
     edited_feira = request.get_json()
     
+    if 'id' in edited_feira and edited_feira['id'] != id:
+        return jsonify({"erro:" "cant modify ID"})
     for indice, feira in enumerate(feiras):
         if feira.get('id') == id:
             feiras[indice].update(edited_feira)
