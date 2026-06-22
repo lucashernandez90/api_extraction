@@ -8,6 +8,7 @@ feiras = [
         'DISTRITO': 'VILA FORMOSA',
         'REGIAO5': 'Leste',
         'NOME_FEIRA': 'VILA FORMOSA',
+        'REGISTRO': '4041-0',
         'BAIRRO': 'VL FORMOSA'
     },
     {
@@ -15,6 +16,7 @@ feiras = [
         'DISTRITO': 'VILA PRUDENTE',
         'REGIAO5': 'Leste',
         'NOME_FEIRA': 'PRACA SANTA HELENA',
+        'REGISTRO': '4045-2',
         'BAIRRO': 'VL ZELINA'
     }
 ]
@@ -77,16 +79,19 @@ def get_feiras_bairro(bairro):
     
 #------------------------PUT---------------------------------#
 
-@app.route('/feiras/<int:id>', methods=['PUT'])     
-def edit_feira_id(id):
+@app.route('/feiras/registro/<string:registro>', methods=['PUT'])     
+def edit_feira_id(registro):
     edited_feira = request.get_json()
     
-    if 'id' in edited_feira and edited_feira['id'] != id:
-        return jsonify({"erro:" "cant modify ID"})
+    if 'REGISTRO' in edited_feira and str(edited_feira['REGISTRO']).lower() != registro.lower():
+        return jsonify({"erro": "cant modify registro"}), 400
+    
     for indice, feira in enumerate(feiras):
-        if feira.get('id') == id:
+        if feira.get('REGISTRO','').lower() == registro.lower():
             feiras[indice].update(edited_feira)
             return jsonify(feiras[indice])
+        
+    return jsonify({"erro": "feira not founded"}), 404
                 
 #------------------------POST---------------------------------#
 
@@ -99,11 +104,13 @@ def include_new_feira():
 
 #------------------------DELETE---------------------------------#
 
-@app.route('/feiras/delete/<int:id>', methods=['DELETE'])
-def delete_feiras(id):
-    for indice, feira in enumerate(feiras):
-        if feira.get('id') == id:
-            del feiras[indice]
+@app.route('/feiras/registro/<string:registro>', methods=['DELETE'])
+def delete_feiras(registro):
+    global feiras 
+    feiras = [
+        feira for feira in feiras 
+        if feira.get('REGISTRO', '').lower() != registro.lower()
+    ]
 
     return jsonify(feiras)
 
