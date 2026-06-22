@@ -1,82 +1,55 @@
 from flask import Flask, jsonify, request
+import sys
+import os
+
+sys.path.append(os.path.dirname(os.path.abspath(__file__)))
+
+from repositories import feira_repository as repo
 
 app = Flask(__name__)
-
-feiras = [
-    {
-        'id': 1,
-        'DISTRITO': 'VILA FORMOSA',
-        'REGIAO5': 'Leste',
-        'NOME_FEIRA': 'VILA FORMOSA',
-        'REGISTRO': '4041-0',
-        'BAIRRO': 'VL FORMOSA'
-    },
-    {
-        'id': 2,
-        'DISTRITO': 'VILA PRUDENTE',
-        'REGIAO5': 'Leste',
-        'NOME_FEIRA': 'PRACA SANTA HELENA',
-        'REGISTRO': '4045-2',
-        'BAIRRO': 'VL ZELINA'
-    }
-]
 
 #------------------------GET---------------------------------#
 
 @app.route('/feiras', methods=['GET'])
 def get_feiras():
-    return jsonify(feiras)
+    return jsonify(repo.get_all())
+
 
 @app.route('/feiras/id/<int:id>', methods=['GET'])
 def get_feiras_id(id):
-    for feira in feiras:
-        if feira.get('id') == id:
-            return jsonify(feira)
-        
+    feiras = repo.search_for_id(id)
+    return jsonify(feiras) if feiras else (jsonify({"erro": "no feiras found"}), 404)
+
+@app.route('/feiras/registro/<string:registro>', methods=['GET'])
+def get_feiras_registro(registro):
+    feiras = repo.search_for_registro(registro)
+    return jsonify(feiras) if feiras else (jsonify({"erro": "no feiras found"}), 404)
+
+
 @app.route('/feiras/distrito/<string:distrito>', methods=['GET'])
 def get_feiras_distrito(distrito):
-    feiras_encontradas = []
-    
-    for feira in feiras:
-        if feira.get('DISTRITO').lower() == distrito.lower():
-            feiras_encontradas.append(feira)
-            
-    if feiras_encontradas:
-        return jsonify(feiras_encontradas)
+    feiras = repo.search_for_distrito(distrito)
+    return jsonify(feiras) if feiras else (jsonify({"erro": "no feiras found"}), 404)
         
+
 @app.route('/feiras/regiao/<string:regiao5>', methods=['GET'])
 def get_feiras_regiao(regiao5):
-    feiras_encontradas = []
-    
-    for feira in feiras:
-        if feira.get('REGIAO5').lower() == regiao5.lower():
-            feiras_encontradas.append(feira)
-            
-    if feiras_encontradas:
-        return jsonify(feiras_encontradas)
-    
+    feiras = repo.search_for_regiao5(regiao5)
+    return jsonify(feiras) if feiras else (jsonify({"erro": "no feiras found"}), 404)
+
+
 @app.route('/feiras/nome_feira/<string:nome_feira>', methods=['GET'])
 def get_feiras_nome(nome_feira):
-    feiras_encontradas = []
-    
-    for feira in feiras:
-        if feira.get('NOME_FEIRA').lower() == nome_feira.lower():
-            feiras_encontradas.append(feira)
-            
-    if feiras_encontradas:
-        return jsonify(feiras_encontradas)
+    feiras = repo.search_for_name(nome_feira)
+    return jsonify(feiras) if feiras else (jsonify({"erro": "no feiras found"}), 404)
+
 
 @app.route('/feiras/bairro/<string:bairro>', methods=['GET'])
 def get_feiras_bairro(bairro):
-    feiras_encontradas = []
-    
-    for feira in feiras:
-        if feira.get('BAIRRO').lower() == bairro.lower():
-            feiras_encontradas.append(feira)
-            
-    if feiras_encontradas:
-        return jsonify(feiras_encontradas)
-    
+    feiras = repo.search_for_bairro(bairro)
+    return jsonify(feiras) if feiras else (jsonify({"erro": "no feiras found"}), 404)
+
+
 #------------------------PUT---------------------------------#
 
 @app.route('/feiras/registro/<string:registro>', methods=['PUT'])     
@@ -86,10 +59,10 @@ def edit_feira_id(registro):
     if 'REGISTRO' in edited_feira and str(edited_feira['REGISTRO']).lower() != registro.lower():
         return jsonify({"erro": "cant modify registro"}), 400
     
-    for indice, feira in enumerate(feiras):
-        if feira.get('REGISTRO','').lower() == registro.lower():
-            feiras[indice].update(edited_feira)
-            return jsonify(feiras[indice])
+    success = repo.update_feira(registro, edited_feira)
+    if success:
+        feira_atualizada = repo.search_for_registro(registro)
+        return jsonify(feira_atualizada), 200
         
     return jsonify({"erro": "feira not founded"}), 404
                 
@@ -98,21 +71,27 @@ def edit_feira_id(registro):
 @app.route('/feiras', methods=['POST'])
 def include_new_feira():
     new_feira = request.get_json()
-    feiras.append(new_feira)
 
-    return jsonify(feiras)
+    if'registro' not in new_feira:
+        return jsonify({"erro": "REGISTRO field is required"}), 400
+
+    id_generated = repo.register_feira(new_feira)
+    saved_feira = repo.search_for_id(id_generated)
+    return jsonify(saved_feira), 201
 
 #------------------------DELETE---------------------------------#
 
 @app.route('/feiras/registro/<string:registro>', methods=['DELETE'])
 def delete_feiras(registro):
-    global feiras 
-    feiras = [
-        feira for feira in feiras 
-        if feira.get('REGISTRO', '').lower() != registro.lower()
-    ]
+    success = repo.delete_feira(registro)
+    if success:
+        return jsonify({"message": f"feira {registro} deleted successfully"}), 200
+            
+    return jsonify({"erro": "feira not founded"}), 404
 
-    return jsonify(feiras)
 
-app.run(port=5000, host='localhost', debug=True)
+if __name__ == "__main__":
+    app.run(port=5000, host='localhost', debug=True)
+
+
 
