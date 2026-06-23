@@ -72,8 +72,8 @@ def edit_feira_id(registro):
 def include_new_feira():
     new_feira = request.get_json()
 
-    if'registro' not in new_feira:
-        return jsonify({"erro": "REGISTRO field is required"}), 400
+    if 'registro' not in new_feira and 'REGISTRO' not in new_feira:
+            return jsonify({"erro": "REGISTRO field is required"}), 400
 
     id_generated = repo.register_feira(new_feira)
     saved_feira = repo.search_for_id(id_generated)
